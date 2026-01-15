@@ -29,15 +29,16 @@ export default function SuccessStories() {
   ];
 
   return (
-    <section className="py-12 px-6 bg-white">
+    // Background updated to match theme (#fdf2f8)
+    <section className="py-20 px-6 bg-[#fdf2f8]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
             Success Stories
           </h2>
-          <p className="text-gray-500 text-lg font-medium">
-            Real people, real connections
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto font-medium">
+            Real people, real connections made through play.
           </p>
         </div>
 
@@ -46,27 +47,27 @@ export default function SuccessStories() {
           {stories.map((story, index) => (
             <div
               key={index}
-              className="bg-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-gray-50 flex flex-col items-center text-center hover:translate-y-[-5px] transition-all duration-300"
+              className="bg-white rounded-[40px] p-8 shadow-xl shadow-pink-200/30 border border-white flex flex-col items-center text-center hover:-translate-y-2 transition-all duration-300"
             >
-              {/* Profile Image - Rounded and not too big */}
-              <div className="w-20 h-20 mb-6 relative">
+              {/* Profile Image - Themed border */}
+              <div className="w-24 h-24 mb-6 relative">
                 <img
                   src={story.image}
                   alt={story.name}
-                  className="w-full h-full object-cover rounded-full border-4 border-pink-50 shadow-sm"
+                  className="w-full h-full object-cover rounded-full border-4 border-pink-100 shadow-md"
                 />
               </div>
 
-              {/* Tag */}
-              <span className="bg-pink-50 text-pink-600 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
+              {/* Tag - Themed colors */}
+              <span className="bg-pink-50 text-pink-500 text-[10px] font-black px-4 py-1.5 rounded-full mb-4 uppercase tracking-[0.1em]">
                 {story.tag}
               </span>
 
               {/* Content */}
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-2xl font-black text-gray-900 mb-3">
                 {story.name}
               </h3>
-              <p className="text-gray-600 leading-relaxed italic">
+              <p className="text-gray-600 leading-relaxed italic text-sm md:text-base">
                 "{story.testimonial}"
               </p>
             </div>

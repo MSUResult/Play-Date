@@ -61,7 +61,7 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gray-50/50">
+    <section className="py-20 px-6 bg-[#fdf2f8]">
       {/* --- HOW IT WORKS SECTION --- */}
       <div className="max-w-7xl mx-auto text-center mb-20">
         <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
@@ -72,19 +72,14 @@ export default function HowItWorks() {
           makes meeting new people fun and effortless.
         </p>
 
-        {/* Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           {steps.map((step, index) => (
             <div
               key={index}
-              className="group bg-white rounded-[32px] p-8 flex flex-col items-start text-left shadow-xl shadow-gray-200/50 border border-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-out"
+              className="group bg-white rounded-[32px] p-8 flex flex-col items-start text-left shadow-xl shadow-pink-200/20 border border-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-out"
             >
               <div
-                className={`${
-                  step.color
-                } p-4 rounded-2xl mb-6 shadow-lg shadow-${
-                  step.color.split("-")[1]
-                }-200 group-hover:scale-110 transition-transform`}
+                className={`${step.color} p-4 rounded-2xl mb-6 shadow-lg group-hover:scale-110 transition-transform`}
               >
                 <step.icon className="w-8 h-8 text-white" />
               </div>
@@ -101,11 +96,28 @@ export default function HowItWorks() {
 
       {/* --- STATS SECTION --- */}
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* 1. Added 'flex overflow-x-auto' for swiping on mobile.
+           2. Added inline style to hide the scrollbar visually while keeping the swipe function.
+        */}
+        <div
+          className="flex overflow-x-auto pb-4 gap-6 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-8"
+          style={{
+            scrollbarWidth: "none" /* Firefox */,
+            msOverflowStyle: "none" /* IE and Edge */,
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {/* Webkit scrollbar hide for Chrome/Safari */}
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="bg-white rounded-[35px] p-8 flex flex-col items-center shadow-lg shadow-gray-200/40 border border-white hover:shadow-xl transition-shadow duration-300"
+              className="min-w-[85%] sm:min-w-[45%] md:min-w-0 snap-center bg-white rounded-[35px] p-8 flex flex-col items-center shadow-lg shadow-pink-200/30 border border-white hover:shadow-xl transition-shadow duration-300"
             >
               <div className={`${stat.bgColor} p-4 rounded-full mb-4`}>
                 <stat.icon className={`w-8 h-8 ${stat.color}`} />
@@ -115,12 +127,17 @@ export default function HowItWorks() {
               >
                 {stat.value}
               </div>
-              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] md:text-xs text-center">
                 {stat.label}
               </p>
             </div>
           ))}
         </div>
+
+        {/* Subtle hint text */}
+        <p className="text-center text-pink-400/40 text-[10px] font-medium mt-4 md:hidden">
+          Slide to view more
+        </p>
       </div>
     </section>
   );

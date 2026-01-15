@@ -1,11 +1,14 @@
 "use client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext"; // Import your hook
 
 export default function HomePage() {
   const router = useRouter();
+  const { user } = useAuth(); // Get the logged-in user data
+
   return (
-    <main className="min-h-screen bg-[#fdf2f8] px-4 py-10 md:py-20 font-sans">
+    <main className="min-h-screen bg-[rgb(253,242,248)] px-4 py-10 md:py-20 font-sans">
       {/* Header Section */}
       <div className="max-w-4xl mx-auto text-center mb-12">
         <div className="flex justify-center gap-2 mb-4">
@@ -26,15 +29,23 @@ export default function HomePage() {
 
       {/* Main Feature Section: Responsive Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-        {/* Left Photo */}
+        {/* Left Photo - UPDATED TO SHOW LOGGED IN USER */}
         <div className="order-2 md:order-1 flex justify-center">
-          <div className="relative w-full max-w-[300px] aspect-[4/5] rounded-3xl overflow-hidden shadow-xl">
+          <div className="relative w-full max-w-[300px] aspect-[4/5] rounded-3xl overflow-hidden shadow-xl bg-white">
             <Image
-              src="/downloade.png"
-              alt="User"
+              // If user is logged in and has a photo, show it. Otherwise show default.
+              src={user?.photo ? user.photo : "/downloade.png"}
+              alt={user?.name || "User"}
               fill
               className="object-cover"
+              priority // Added priority to load the user's face fast
             />
+            {/* Optional: Small "You" badge if logged in */}
+            {user && (
+              <div className="absolute bottom-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30 text-white text-xs font-bold">
+                Logged in as {user.name}
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
-import { MapPin, Swords, Mic } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { MapPin, Swords, Mic, ShieldCheck } from "lucide-react";
 
+// Keep your dummy players as backup
 const DUMMY_PLAYERS = [
   {
     id: 1,
@@ -49,50 +50,85 @@ const DUMMY_PLAYERS = [
 ];
 
 const ActiveChallengers = () => {
+  const [realPlayers, setRealPlayers] = useState([]);
+
+  useEffect(() => {
+    const fetchRealPlayers = async () => {
+      try {
+        const res = await fetch("/api/players");
+        const data = await res.json();
+        setRealPlayers(data.users || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchRealPlayers();
+  }, []);
+
+  const allPlayers = [...realPlayers, ...DUMMY_PLAYERS];
+
   return (
-    /* RESPONSIVE GRID:
-       Mobile: 2 columns
-       Tablet: 3 columns (md:)
-       Laptop/Desktop: 4 columns (lg:)
-    */
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-      {DUMMY_PLAYERS.map((player) => (
-        <div key={player.id} className="flex flex-col gap-3 group">
-          {/* Card Container */}
-          <div className="relative aspect-[3/4] rounded-[32px] overflow-hidden shadow-lg border-2 border-white bg-white hover:shadow-2xl transition-all duration-300">
-            {/* Image */}
-            <img
-              src={player.img}
-              alt={player.name}
-              className="w-full h-full object-cover bg-slate-100 group-hover:scale-110 transition-transform duration-500"
-            />
+      {allPlayers.map((player) => {
+        // Logic to check if user is truly "Live" (active in last 5 mins)
+        const isRecentlyOnline =
+          player.isReal &&
+          new Date().getTime() - new Date(player.lastActive).getTime() <
+            5 * 60 * 1000;
 
-            {/* Top Right Status Badge */}
-            <div className="absolute top-3 right-3 p-2 bg-black/30 backdrop-blur-md rounded-full border border-white/20">
-              <Mic className="w-3 h-3 text-white" />
-            </div>
+        return (
+          <div key={player.id} className="flex flex-col gap-3 group">
+            <div className="relative aspect-[3/4] rounded-[32px] overflow-hidden shadow-lg border-2 border-white bg-white hover:shadow-2xl transition-all duration-300">
+              <img
+                src={player.img}
+                alt={player.name}
+                className="w-full h-full object-cover bg-slate-100 group-hover:scale-110 transition-transform duration-500"
+              />
 
-            {/* Name/Distance Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-              <h3 className="text-white font-bold text-lg md:text-xl">
-                {player.name}, {player.age}
-              </h3>
-              <div className="flex items-center gap-1 text-white/80 text-[10px] md:text-xs font-bold uppercase tracking-tight">
-                <MapPin className="w-3 h-3" />
-                {player.dist} away
+              {/* LIVE BADGE - Only for real users active right now */}
+              {isRecentlyOnline && (
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-green-500 rounded-full shadow-lg shadow-green-500/40">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                  <span className="text-[9px] font-black text-white uppercase tracking-tighter">
+                    Live
+                  </span>
+                </div>
+              )}
+
+              {/* Verified Badge */}
+              {player.isVerified && (
+                <div className="absolute top-3 right-10 p-1 bg-blue-500 rounded-full border border-white">
+                  <ShieldCheck
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                  />
+                </div>
+              )}
+
+              <div className="absolute top-3 right-3 p-2 bg-black/30 backdrop-blur-md rounded-full border border-white/20">
+                <Mic className="w-3 h-3 text-white" />
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/20 to-transparent">
+                <h3 className="text-white font-bold text-lg md:text-xl">
+                  {player.name}, {player.age}
+                </h3>
+                <div className="flex items-center gap-1 text-white/80 text-[10px] md:text-xs font-bold uppercase">
+                  <MapPin className="w-3 h-3 text-pink-500" />
+                  {player.dist}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Action Button */}
-          <button className="w-full py-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md border border-slate-700">
-            <Swords className="w-4 h-4 text-[#00FFAB]" />
-            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">
-              Challenge
-            </span>
-          </button>
-        </div>
-      ))}
+            <button className="w-full py-3 bg-slate-900 hover:bg-pink-600 text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md group">
+              <Swords className="w-4 h-4 text-[#00FFAB] group-hover:rotate-12 transition-transform" />
+              <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">
+                Challenge
+              </span>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 };

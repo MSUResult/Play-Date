@@ -1,36 +1,59 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 
-const AuthContext = createContext({ user: null, loading: true });
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  onlineUsers: [],
+});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  // 1. Function to check the current user session (updates our lastActive)
+  const checkUser = async () => {
+    try {
+      const res = await fetch("/api/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error("❌ AUTH: Session check failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Function to fetch EVERYONE who is online
+  const fetchOnlineUsers = async () => {
+    try {
+      const res = await fetch("/api/online");
+      const data = await res.json();
+      setOnlineUsers(data.users || []);
+    } catch (err) {
+      console.error("❌ AUTH: Could not fetch online users", err);
+    }
+  };
 
   useEffect(() => {
-    const checkUser = async () => {
-      const start = Date.now();
-      try {
-        console.log("🔍 AUTH: Checking session...");
-        const res = await fetch("/api/me"); // Create a simple route to verify the JWT cookie
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-          console.log(`✅ AUTH: User logged in (${Date.now() - start}ms)`);
-        } else {
-          console.log("ℹ️ AUTH: No active session found.");
-        }
-      } catch (err) {
-        console.error("❌ AUTH: Error checking session", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // RUN IMMEDIATELY ON START
     checkUser();
+    fetchOnlineUsers();
+
+    // HEARTBEAT: Every 3 minutes update my status & refresh the online list
+    const heartbeat = setInterval(() => {
+      checkUser();
+      fetchOnlineUsers();
+    }, 180000); // 3 Minutes
+
+    return () => clearInterval(heartbeat);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, onlineUsers }}>
       {children}
     </AuthContext.Provider>
   );

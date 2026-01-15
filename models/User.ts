@@ -14,6 +14,7 @@ const UserSchema = new Schema({
   voiceIntro: { type: String },
   bio: { type: String, default: "Hey! Let's play." },
   isVerified: { type: Boolean, default: false },
+  lastActive: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
 });
 

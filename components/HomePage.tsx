@@ -19,8 +19,8 @@ export default function HomePage() {
         </h1>
 
         <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto">
-          Why <span className="font-bold text-pink-500">swipe</span> whn you can
-          play ? Connect through the world's favourite quick game
+          Why <span className="font-bold text-pink-500">swipe</span> when you
+          can play ? Connect through the world's favourite quick game
         </p>
       </div>
 

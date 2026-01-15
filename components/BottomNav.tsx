@@ -9,7 +9,7 @@ export default function BottomNav() {
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Profile", href: "/profile", icon: User },
-    { name: "Matches", href: "/matches", icon: Heart },
+    { name: "Explore", href: "/explore", icon: Heart },
   ];
 
   return (
@@ -18,12 +18,22 @@ export default function BottomNav() {
         const Icon = item.icon;
         const isActive = pathname === item.href;
         return (
-          <Link key={item.name} href={item.href} className="flex flex-col items-center gap-1">
-            <Icon 
-              size={24} 
-              className={isActive ? "text-rose-500 fill-rose-500" : "text-gray-400"} 
+          <Link
+            key={item.name}
+            href={item.href}
+            className="flex flex-col items-center gap-1"
+          >
+            <Icon
+              size={24}
+              className={
+                isActive ? "text-rose-500 fill-rose-500" : "text-gray-400"
+              }
             />
-            <span className={`text-xs ${isActive ? "text-rose-500 font-medium" : "text-gray-400"}`}>
+            <span
+              className={`text-xs ${
+                isActive ? "text-rose-500 font-medium" : "text-gray-400"
+              }`}
+            >
               {item.name}
             </span>
           </Link>

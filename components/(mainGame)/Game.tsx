@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, ArrowLeft, Sparkles, Mic, Radio } from "lucide-react";
 import { Toaster } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getBestMove,
   calculateWinner,
@@ -21,6 +22,7 @@ const AI_TIPS = [
 ];
 
 export default function Game() {
+  const router = useRouter();
   const [squares, setSquares] = useState<SquareValue[]>(Array(9).fill(null));
   const [isMyTurn, setIsMyTurn] = useState(true);
   const [gameStatus, setGameStatus] = useState<
@@ -64,11 +66,14 @@ export default function Game() {
   const checkEndGame = (sq: SquareValue[]) => {
     const winner = calculateWinner(sq);
     if (winner) {
-      setGameStatus(winner === "X" ? "won" : "lost");
+      const result = winner === "X" ? "win" : "lose";
+      // Redirect to the result page with the status
+      // Example: /sarah/result?status=win
+      router.push(`/sarah/result?status=${result}`);
       return true;
     }
     if (isBoardFull(sq)) {
-      setGameStatus("draw");
+      router.push(`/sarah/result?status=draw`);
       return true;
     }
     return false;

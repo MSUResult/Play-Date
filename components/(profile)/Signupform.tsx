@@ -104,6 +104,10 @@ export default function SignupPage() {
     }
   };
 
+  // Reusable input class for dark text and visible placeholders
+  const inputClasses =
+    "w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400 text-gray-900 placeholder-gray-400";
+
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4 flex flex-col items-center">
       <div className="max-w-md w-full">
@@ -126,6 +130,7 @@ export default function SignupPage() {
                   <img
                     src={profile.photo}
                     className="w-full h-full object-cover"
+                    alt="Profile"
                   />
                 ) : (
                   <User className="w-8 h-8 text-gray-300" />
@@ -148,7 +153,7 @@ export default function SignupPage() {
             <input
               required
               placeholder="Full Name"
-              className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+              className={inputClasses}
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
             />
@@ -156,7 +161,7 @@ export default function SignupPage() {
               required
               type="email"
               placeholder="Email"
-              className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+              className={inputClasses}
               value={profile.email}
               onChange={(e) =>
                 setProfile({ ...profile, email: e.target.value })
@@ -165,7 +170,7 @@ export default function SignupPage() {
             <div className="flex gap-2">
               <input
                 placeholder="Phone"
-                className="w-2/3 h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+                className={`${inputClasses} w-2/3`}
                 value={profile.phone}
                 onChange={(e) =>
                   setProfile({ ...profile, phone: e.target.value })
@@ -175,7 +180,7 @@ export default function SignupPage() {
                 required
                 type="number"
                 placeholder="Age"
-                className="w-1/3 h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+                className={`${inputClasses} w-1/3`}
                 value={profile.age}
                 onChange={(e) =>
                   setProfile({ ...profile, age: e.target.value })
@@ -186,7 +191,7 @@ export default function SignupPage() {
             {/* Country & State */}
             <div className="grid grid-cols-2 gap-2">
               <select
-                className="h-12 px-3 rounded-xl bg-gray-50 text-sm"
+                className="h-12 px-3 rounded-xl bg-gray-50 text-gray-900 text-sm"
                 value={profile.country}
                 onChange={(e) =>
                   setProfile({ ...profile, country: e.target.value })
@@ -198,7 +203,7 @@ export default function SignupPage() {
                 <input
                   required
                   placeholder="State"
-                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+                  className={inputClasses}
                   value={profile.state}
                   onChange={(e) => handleStateChange(e.target.value)}
                 />
@@ -207,7 +212,7 @@ export default function SignupPage() {
                     {stateSuggestions.map((s) => (
                       <div
                         key={s}
-                        className="p-2 hover:bg-pink-50 cursor-pointer text-sm"
+                        className="p-2 hover:bg-pink-50 cursor-pointer text-sm text-gray-900"
                         onClick={() => {
                           setProfile({ ...profile, state: s });
                           setStateSuggestions([]);
@@ -223,7 +228,7 @@ export default function SignupPage() {
 
             <input
               placeholder="District (Optional)"
-              className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-pink-400"
+              className={inputClasses}
               value={profile.district}
               onChange={(e) =>
                 setProfile({ ...profile, district: e.target.value })

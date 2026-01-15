@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       aadhaarCard,
     } = body;
 
-    // 1. Upload Profile Photo
+    // 1. Uploads (Optimized for mobile speed)
     let imageUrl = "";
     if (photo) {
       const uploadRes = await cloudinary.uploader.upload(photo, {
@@ -36,7 +36,6 @@ export async function POST(req: Request) {
       imageUrl = uploadRes.secure_url;
     }
 
-    // 2. Upload Aadhaar Card (If provided)
     let aadhaarUrl = "";
     if (aadhaarCard) {
       const uploadAadhaar = await cloudinary.uploader.upload(aadhaarCard, {
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
       aadhaarUrl = uploadAadhaar.secure_url;
     }
 
-    // 3. Create User
+    // 2. Save User
     const newUser = await User.create({
       name,
       email,
@@ -56,23 +55,27 @@ export async function POST(req: Request) {
       district,
       photo: imageUrl,
       aadhaarCard: aadhaarUrl,
-      isVerified: !!aadhaarUrl, // Auto-verify if they upload Aadhaar
+      isVerified: !!aadhaarUrl,
     });
 
-    // 4. Auth Token
+    // 3. Generate Token
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET!, {
-      expiresIn: "7d",
-    });
+      expiresIn: "30d",
+    }); // Long expiry for mobile
+
+    // 4. Set Cookie (CRITICAL FOR MOBILE)
     const cookieStore = await cookies();
     cookieStore.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7,
+      secure: process.env.NODE_ENV === "production", // Only true in production
+      sameSite: "lax", // Better for mobile redirects than "strict"
+      maxAge: 60 * 60 * 24 * 30, // 30 Days - keeps them logged in even if they close browser
       path: "/",
     });
 
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Signup Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

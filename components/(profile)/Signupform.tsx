@@ -264,10 +264,17 @@ export default function SignupPage() {
           <button
             disabled={isSubmitting}
             type="submit"
-            className="w-full h-14 mt-4 rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+            className={`w-full h-14 mt-4 rounded-2xl bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              isSubmitting
+                ? "opacity-70 cursor-not-allowed"
+                : "hover:shadow-pink-200"
+            }`}
           >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" />
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Creating Profile...</span>
+              </>
             ) : (
               "Start Matching"
             )}

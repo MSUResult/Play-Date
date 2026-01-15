@@ -29,7 +29,12 @@ export default function HomePage() {
         {/* Left Photo */}
         <div className="order-2 md:order-1 flex justify-center">
           <div className="relative w-full max-w-[300px] aspect-[4/5] rounded-3xl overflow-hidden shadow-xl">
-            <Image src="/next.svg" alt="User" fill className="object-cover" />
+            <Image
+              src="/downloade.png"
+              alt="User"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
 
@@ -71,7 +76,12 @@ export default function HomePage() {
         {/* Right Photo */}
         <div className="order-3 flex justify-center">
           <div className="relative w-full max-w-[300px] aspect-[4/5] rounded-3xl overflow-hidden shadow-xl">
-            <Image src="/file.svg" alt="User" fill className="object-cover" />
+            <Image
+              src="/downloadm.png"
+              alt="User"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
       </div>

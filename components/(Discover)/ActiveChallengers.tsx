@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { MapPin, Swords, Mic, ShieldCheck } from "lucide-react";
+import { MapPin, Swords, Heart, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext"; // Import your custom auth
+import { toast } from "sonner"; // For the "Go Login" notification
 
-// Keep your dummy players as backup
 const DUMMY_PLAYERS = [
   {
     id: 1,
@@ -32,7 +33,6 @@ const DUMMY_PLAYERS = [
     dist: "10km",
     img: "https://api.dicebear.com/7.x/avataaars/svg?seed=James",
   },
-  // Adding two more for better desktop filling
   {
     id: 5,
     name: "Zoe",
@@ -50,7 +50,11 @@ const DUMMY_PLAYERS = [
 ];
 
 const ActiveChallengers = () => {
+  const { user } = useAuth(); // Access your custom auth state
   const [realPlayers, setRealPlayers] = useState([]);
+  const [likedPlayers, setLikedPlayers] = useState<
+    Record<string | number, boolean>
+  >({});
 
   useEffect(() => {
     const fetchRealPlayers = async () => {
@@ -65,27 +69,69 @@ const ActiveChallengers = () => {
     fetchRealPlayers();
   }, []);
 
+  const toggleLike = async (receiverId: string | number) => {
+    // 1. Check if user is logged in
+    if (!user) {
+      toast.error("Authentication Required", {
+        description: "Please login to like this player.",
+        action: {
+          label: "Login",
+          onClick: () => (window.location.href = "/login"), // Redirect to your login page
+        },
+      });
+      return;
+    }
+
+    // 2. Optimistic Update (UI changes immediately)
+    const isCurrentlyLiked = likedPlayers[receiverId];
+    setLikedPlayers((prev) => ({ ...prev, [receiverId]: !isCurrentlyLiked }));
+
+    try {
+      const res = await fetch("/api/social/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderId: user._id, // Your ID from AuthContext
+          receiverId: receiverId, // The ID of the person you liked
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to sync with database");
+
+      const data = await res.json();
+      // Ensure local state matches server reality (in case of double clicks)
+      setLikedPlayers((prev) => ({ ...prev, [receiverId]: data.isLiked }));
+    } catch (err) {
+      // Rollback UI if database fails
+      setLikedPlayers((prev) => ({ ...prev, [receiverId]: isCurrentlyLiked }));
+      toast.error("Something went wrong. Try again.");
+    }
+  };
+
   const allPlayers = [...realPlayers, ...DUMMY_PLAYERS];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
       {allPlayers.map((player) => {
-        // Logic to check if user is truly "Live" (active in last 5 mins)
+        // Use MongoDB _id if available, otherwise fallback to dummy id
+        const playerId = player._id || player.id;
+
         const isRecentlyOnline =
           player.isReal &&
           new Date().getTime() - new Date(player.lastActive).getTime() <
             5 * 60 * 1000;
 
+        const isLiked = likedPlayers[playerId];
+
         return (
-          <div key={player.id} className="flex flex-col gap-3 group">
+          <div key={playerId} className="flex flex-col gap-3 group">
             <div className="relative aspect-[3/4] rounded-[32px] overflow-hidden shadow-lg border-2 border-white bg-white hover:shadow-2xl transition-all duration-300">
               <img
-                src={player.img}
+                src={player.photo || player.img} // Handles both your Schema (photo) and Dummy (img)
                 alt={player.name}
                 className="w-full h-full object-cover bg-slate-100 group-hover:scale-110 transition-transform duration-500"
               />
 
-              {/* LIVE BADGE - Only for real users active right now */}
               {isRecentlyOnline && (
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-green-500 rounded-full shadow-lg shadow-green-500/40">
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
@@ -95,9 +141,8 @@ const ActiveChallengers = () => {
                 </div>
               )}
 
-              {/* Verified Badge */}
               {player.isVerified && (
-                <div className="absolute top-3 right-10 p-1 bg-blue-500 rounded-full border border-white">
+                <div className="absolute top-3 right-12 p-1 bg-blue-500 rounded-full border border-white">
                   <ShieldCheck
                     className="w-3 h-3 text-white"
                     fill="currentColor"
@@ -105,9 +150,16 @@ const ActiveChallengers = () => {
                 </div>
               )}
 
-              <div className="absolute top-3 right-3 p-2 bg-black/30 backdrop-blur-md rounded-full border border-white/20">
-                <Mic className="w-3 h-3 text-white" />
-              </div>
+              <button
+                onClick={() => toggleLike(playerId)}
+                className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full border border-white/20 active:scale-125 transition-all z-10"
+              >
+                <Heart
+                  className={`w-4 h-4 transition-colors duration-300 ${
+                    isLiked ? "text-pink-500 fill-pink-500" : "text-white"
+                  }`}
+                />
+              </button>
 
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/20 to-transparent">
                 <h3 className="text-white font-bold text-lg md:text-xl">
@@ -115,7 +167,7 @@ const ActiveChallengers = () => {
                 </h3>
                 <div className="flex items-center gap-1 text-white/80 text-[10px] md:text-xs font-bold uppercase">
                   <MapPin className="w-3 h-3 text-pink-500" />
-                  {player.dist}
+                  {player.district || player.dist}
                 </div>
               </div>
             </div>

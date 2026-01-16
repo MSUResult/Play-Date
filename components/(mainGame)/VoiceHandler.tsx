@@ -1,55 +1,40 @@
 "use client";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { Mic } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-interface VoiceHandlerProps {
-  status: "idle" | "listening" | "speaking" | "live";
-  onPermissionError: () => void;
-}
-
-export default function VoiceHandler({
-  status,
-  onPermissionError,
-}: VoiceHandlerProps) {
+export default function VoiceHandler({ status, onPermissionError }: any) {
   useEffect(() => {
-    const requestMic = async () => {
+    let stream: MediaStream | null = null;
+
+    const startMic = async () => {
       try {
-        // Keep the stream active in the background
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Stream is now active for the duration of the component lifecycle
       } catch (err) {
-        toast.error("Mic Connection Failed", {
-          description: "Enable mic for the live experience.",
-        });
+        toast.error("Mic Error", { description: "Voice chat disconnected." });
         onPermissionError();
       }
     };
-    requestMic();
-  }, [onPermissionError]);
 
-  if (status === "idle") return null;
+    startMic();
+
+    // Clean up: This stops the mic ONLY when the user leaves the page
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center pointer-events-none">
-      {status === "listening" && (
-        <div className="bg-pink-500 p-1.5 rounded-full animate-pulse shadow-lg">
-          <Mic className="text-white w-3 h-3" />
-        </div>
-      )}
-
-      {status === "speaking" && (
-        <div className="flex gap-0.5 items-center h-4 bg-blue-500/20 px-2 rounded-full border border-blue-500/30">
-          {[1, 2, 3].map((i) => (
-            <motion.div
-              key={i}
-              animate={{ height: ["20%", "80%", "20%"] }}
-              transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }}
-              className="w-1 bg-blue-500 rounded-full"
-            />
-          ))}
-        </div>
-      )}
+    <div className="fixed top-6 right-6 z-50 pointer-events-none">
+      <div className="flex items-center gap-2 bg-[#10B981]/20 border border-[#10B981]/30 px-3 py-1.5 rounded-full backdrop-blur-md">
+        <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
+        <span className="text-[10px] font-black text-[#10B981] tracking-widest uppercase">
+          Live Voice
+        </span>
+      </div>
     </div>
   );
 }

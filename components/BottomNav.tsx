@@ -6,6 +6,12 @@ import { Home, User, Heart } from "lucide-react";
 export default function BottomNav() {
   const pathname = usePathname();
 
+  // Using .includes or regex allows you to catch [slug] routes like /sarah/result
+  const isGamePage = pathname.includes("/play") || pathname.includes("/result");
+
+  // 2. If it's a game or result page, don't show the nav
+  if (isGamePage) return null;
+
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Profile", href: "/profile", icon: User },

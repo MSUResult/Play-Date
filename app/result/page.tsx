@@ -1,53 +1,46 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Crown, RotateCcw, Home } from "lucide-react";
 import Link from "next/link";
 
-export default function ResultPage() {
+// 1. Create a separate component for the content
+function ResultContent() {
   const searchParams = useSearchParams();
-  const { slug } = useParams();
+  const params = useParams();
+
+  // Get the slug from params, fallback to 'player' if it's missing to avoid 'undefined' in URLs
+  const slug = params?.slug || "player";
 
   const status = searchParams.get("status");
   const winCount = searchParams.get("wins") || "0";
   const lossCount = searchParams.get("losses") || "0";
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isWin = status === "win";
 
   useEffect(() => {
     const playDonkeySound = () => {
       if (!isWin) {
-        // Create the audio instance
         const audio = new Audio("/donkey-mock.mp3");
-        audio.volume = 0.7; // Optional: set volume
-
-        // Attempt to play
+        audio.volume = 0.7;
         const playPromise = audio.play();
 
         if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            // If blocked, we listen for a click anywhere on the screen to play it
-            console.log("Autoplay blocked. Waiting for user interaction...");
-
+          playPromise.catch(() => {
             const playOnInteraction = () => {
               audio.play();
               window.removeEventListener("click", playOnInteraction);
             };
-
             window.addEventListener("click", playOnInteraction);
           });
         }
       }
     };
 
-    // Small delay helps with some browser race conditions
     const timer = setTimeout(playDonkeySound, 300);
-
     return () => {
       clearTimeout(timer);
-      // Cleanup event listener if user leaves before clicking
       window.removeEventListener("click", () => {});
     };
   }, [isWin]);
@@ -144,6 +137,7 @@ export default function ResultPage() {
 
       {/* Buttons */}
       <div className="flex flex-col w-full max-w-xs gap-4">
+        {/* Fixed Link to prevent 'undefined' */}
         <Link href={`/${slug}/play`} className="w-full">
           <button className="w-full bg-emerald-500 text-black h-16 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-transform">
             <RotateCcw size={20} /> REMATCH
@@ -166,5 +160,20 @@ export default function ResultPage() {
         </motion.div>
       )}
     </div>
+  );
+}
+
+// 2. Wrap everything in Suspense for the build to pass
+export default function ResultPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0A0F0D] flex items-center justify-center text-white">
+          Loading Results...
+        </div>
+      }
+    >
+      <ResultContent />
+    </Suspense>
   );
 }

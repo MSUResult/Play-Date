@@ -1,5 +1,6 @@
 "use client";
 import { Gamepad2, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 export function HistoryItem({
   game,
@@ -10,20 +11,24 @@ export function HistoryItem({
   isLast: boolean;
   currentUserId: string;
 }) {
-  // Determine if the player won or lost based on winnerId in DB
   const isWinner = game.result?.winnerId === currentUserId;
   const resultText =
     game.result?.winnerId === "DRAW" ? "DRAW" : isWinner ? "WON" : "LOST";
+
+  const opponent =
+    game.challengerId?._id === currentUserId
+      ? game.receiverId
+      : game.challengerId;
 
   return (
     <div
       className={`p-4 flex items-center justify-between ${!isLast ? "border-b border-slate-50" : ""}`}
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
-          {game.challengerId?.photo ? (
+        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+          {opponent?.photo ? (
             <img
-              src={game.challengerId.photo}
+              src={opponent.photo}
               alt="user"
               className="w-full h-full object-cover"
             />
@@ -33,7 +38,7 @@ export function HistoryItem({
         </div>
         <div>
           <p className="font-black text-slate-800 text-sm">
-            {game.challengerId?.name || "Opponent"}
+            {opponent?.name || "Deleted User"}
           </p>
           <p className="text-[10px] text-slate-400 font-bold uppercase">
             {game.task || "Rock Paper Scissors"} •{" "}
@@ -62,14 +67,35 @@ export function HistoryItem({
   );
 }
 
-export default function GamingHistoryTab({
-  history,
-  currentUserId,
-}: {
-  history: any[];
-  currentUserId: string;
-}) {
-  if (!history || history.length === 0) {
+export function GamingHistoryTab({ currentUserId }: { currentUserId: string }) {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHistory() {
+      try {
+        const res = await fetch(
+          `/api/challenge?userId=${currentUserId}&status=completed&t=${Date.now()}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) setHistory(data);
+      } catch (e) {
+        console.error("History fetch failed");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (currentUserId) fetchHistory();
+  }, [currentUserId]);
+
+  if (loading)
+    return (
+      <div className="p-10 text-center animate-pulse text-slate-300 font-bold italic">
+        LOADING HISTORY...
+      </div>
+    );
+
+  if (history.length === 0) {
     return (
       <div className="p-10 text-center text-slate-300 font-bold italic text-sm">
         NO MATCH RECORDS YET
@@ -85,7 +111,6 @@ export default function GamingHistoryTab({
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
         {history.map((game, idx) => (
           <HistoryItem
-            // FIX: Use game._id, then fallback to game.id, then fallback to the index (idx)
             key={game._id || game.id || `history-${idx}`}
             game={game}
             currentUserId={currentUserId}

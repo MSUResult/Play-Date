@@ -1,28 +1,11 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Heart, Swords, Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { GamingHistoryTab } from "./GamingHistoryTab"; // Import your history component
 
-const DUMMY_CHALLENGES = [
-  {
-    id: "c1",
-    name: "Zoe",
-    task: "10 PUSHUPS",
-    time: new Date(Date.now() - 120000),
-  },
-];
-
-const DUMMY_LIKES = [
-  {
-    id: "d1",
-    name: "Riya",
-    msg: "Wants to play!",
-    photo: null,
-    time: new Date(Date.now() - 300000),
-  },
-];
-
+// --- HELPERS ---
 const formatTime = (date: any) => {
   if (!date) return "now";
   const now = new Date().getTime();
@@ -33,32 +16,22 @@ const formatTime = (date: any) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
-export function LikeCard({ like }: { like: any }) {
-  return (
-    <div className="bg-white p-4 rounded-[24px] border border-slate-100 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-pink-50 flex items-center justify-center font-black text-pink-500 text-xs border border-pink-100">
-          {like.name[0]}
-        </div>
-        <div>
-          <p className="font-black text-slate-800 text-sm">{like.name}</p>
-          <p className="text-[10px] text-slate-400 font-bold">
-            {like.msg || "Liked your profile"}
-          </p>
-        </div>
-      </div>
-      <span className="text-[10px] font-black text-slate-300 uppercase italic">
-        {formatTime(like.time)}
-      </span>
-    </div>
-  );
-}
+// --- COMPONENTS ---
 
-export function ChallengeCard({ ch }: { ch: any }) {
+export function ChallengeCard({
+  ch,
+  onAccept,
+}: {
+  ch: any;
+  onAccept: (id: string) => void;
+}) {
   const router = useRouter();
+
   const handleAccept = () => {
     const challengerId = ch.challengerId?._id || ch.id;
-    router.push(`/play/activeChallenge/${challengerId}?id=${ch._id || ch.id}`);
+    const documentId = ch._id || ch.id;
+    onAccept(documentId);
+    router.push(`/play/activeChallenge/${challengerId}?id=${documentId}`);
   };
 
   return (
@@ -91,33 +64,38 @@ export function ChallengeCard({ ch }: { ch: any }) {
   );
 }
 
+// --- MAIN TAB ---
+
 export default function ActivityTab() {
-  const [realChallenges, setRealChallenges] = useState([]);
+  const [realChallenges, setRealChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchActivity() {
-      if (!user?._id) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/recordChallenge?userId=${user._id}`);
-        const data = await res.json();
-        // The API only returns "pending" status, so as soon as you PATCH a game to "completed",
-        // it will disappear from this list when the page refreshes.
-        if (Array.isArray(data)) setRealChallenges(data);
-      } catch (err) {
-        console.error("Failed to load challenges");
-      } finally {
-        setLoading(false);
-      }
+  const fetchActivity = useCallback(async () => {
+    if (!user?._id) return;
+    try {
+      // ONLY fetch Pending here
+      const resPending = await fetch(
+        `/api/challenge?userId=${user._id}&status=pending&t=${Date.now()}`,
+      );
+      const pendingData = await resPending.json();
+      if (Array.isArray(pendingData)) setRealChallenges(pendingData);
+    } catch (err) {
+      console.error("Failed to load activity");
+    } finally {
+      setLoading(false);
     }
-    fetchActivity();
   }, [user?._id]);
 
-  const allChallenges = [...realChallenges, ...DUMMY_CHALLENGES];
+  useEffect(() => {
+    fetchActivity();
+  }, [fetchActivity]);
+
+  const handleFastRemove = (id: string) => {
+    setRealChallenges((prev) =>
+      prev.filter((item) => (item._id || item.id) !== id),
+    );
+  };
 
   if (loading)
     return (
@@ -130,26 +108,25 @@ export default function ActivityTab() {
     <div className="space-y-8">
       <div>
         <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
-          <Heart size={12} className="text-pink-500" fill="currentColor" />{" "}
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
-          {DUMMY_LIKES.map((like) => (
-            <LikeCard key={like.id} like={like} />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
           <Swords size={12} className="text-orange-500" /> Pending Challenges
         </h3>
         <div className="space-y-3">
-          {allChallenges.map((ch: any) => (
-            <ChallengeCard key={ch._id || ch.id} ch={ch} />
-          ))}
+          {realChallenges.length === 0 ? (
+            <p className="text-xs text-slate-300 italic font-bold p-4">
+              No pending games
+            </p>
+          ) : (
+            realChallenges.map((ch: any) => (
+              <ChallengeCard
+                key={ch._id || ch.id}
+                ch={ch}
+                onAccept={handleFastRemove}
+              />
+            ))
+          )}
         </div>
       </div>
+      {/* HISTORY REMOVED FROM HERE */}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { determineWinner, Move } from "@/components/(mainGame)/gameLogic";
@@ -10,11 +10,12 @@ import GameBoard from "@/components/(mainGame)/GameBoard";
 
 export default function MatchGame() {
   const router = useRouter();
-  const { slug } = useParams(); // ID of the person who challenged you
+  const { slug } = useParams();
   const searchParams = useSearchParams();
-  const challengeId = searchParams.get("id"); // Document ID
+  const challengeId = searchParams.get("id");
   const { user } = useAuth();
 
+  // STATE
   const [opponentSavedMoves, setOpponentSavedMoves] = useState<Move[]>([]);
   const [loading, setLoading] = useState(true);
   const [round, setRound] = useState(1);
@@ -23,17 +24,25 @@ export default function MatchGame() {
   const [opponentMove, setOpponentMove] = useState<Move>(null);
   const [showResult, setShowResult] = useState(false);
 
+  // REFS - Crucial for preventing the "Abort" bug
+  const isFinishedRef = useRef(false);
+
+  // 1. FETCH CHALLENGE DATA
   useEffect(() => {
     async function fetchChallengeData() {
+      console.log("🛠️ FETCH: Starting fetch for challenge ID:", challengeId);
       try {
-        // Corrected parameter name to match your GET API
-        const res = await fetch(
-          `/api/recordChallenge?challengeId=${challengeId}`
-        );
+        const res = await fetch(`/api/challenge?id=${challengeId}`);
         const data = await res.json();
-        setOpponentSavedMoves(data.challengerMoves);
+
+        if (data.challengerMoves) {
+          console.log("✅ FETCH SUCCESS: Moves loaded", data.challengerMoves);
+          setOpponentSavedMoves(data.challengerMoves);
+        } else {
+          console.warn("⚠️ FETCH WARNING: No moves found in response");
+        }
       } catch (err) {
-        console.error("Error loading challenge moves");
+        console.error("❌ FETCH ERROR:", err);
       } finally {
         setLoading(false);
       }
@@ -41,13 +50,47 @@ export default function MatchGame() {
     if (challengeId) fetchChallengeData();
   }, [challengeId]);
 
+  // 2. ABORT LOGIC (Safety Guard)
+  useEffect(() => {
+    return () => {
+      // Logic: If the component closes, but we never hit Round 4...
+      if (!isFinishedRef.current && !loading && opponentSavedMoves.length > 0) {
+        console.log(
+          "🚨 ABORT DETECTED: Player left mid-game. Sending loss PATCH.",
+        );
+
+        fetch("/api/challenge", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            challengeId: challengeId,
+            winnerId: slug, // Challenger wins because current user left
+            finalScore: { player: 0, opponent: 4 },
+          }),
+          keepalive: true,
+        });
+      }
+    };
+  }, [loading, opponentSavedMoves, challengeId, slug]);
+
+  // 3. COMPLETE CHALLENGE FUNCTION
   const completeChallenge = async (pScore: number, oScore: number) => {
+    console.log(
+      "🏁 FINISHING: Scores Finalized -> Player:",
+      pScore,
+      "Opponent:",
+      oScore,
+    );
+
+    if (isFinishedRef.current) return;
+    isFinishedRef.current = true;
+
     let winnerId = pScore > oScore ? user?._id : slug;
     if (pScore === oScore) winnerId = "DRAW";
 
+    console.log("📡 PATCH: Sending final results to server...");
+
     try {
-      // 1. WIPE MOVE DATA & MARK AS COMPLETED
-      // This makes the website fast because we delete heavy arrays immediately
       await fetch("/api/challenge", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -56,43 +99,48 @@ export default function MatchGame() {
           winnerId: winnerId,
           finalScore: { player: pScore, opponent: oScore },
         }),
+        keepalive: true,
       });
-
-      // 2. REDIRECT TO RESULT
-      // We pass the slug here so the ResultPage knows who the opponent was
-      router.push(
-        `/result?wins=${pScore}&losses=${oScore}&status=${pScore > oScore ? "win" : "lose"}&slug=${slug}`
-      );
-    } catch (e) {
-      console.error("Failed to save final results");
-      // Fallback redirect even if DB update fails to keep UX smooth
-      router.push(
-        `/result?wins=${pScore}&losses=${oScore}&status=${pScore > oScore ? "win" : "lose"}`
-      );
+      console.log("✅ PATCH SUCCESS: Game recorded.");
+    } catch (error) {
+      console.error("❌ PATCH ERROR:", error);
     }
+
+    router.push(
+      `/result?wins=${pScore}&losses=${oScore}&status=${pScore > oScore ? "win" : "lose"}`,
+    );
   };
 
+  // 4. HANDLE MOVE LOGIC
   const handleMove = (move: Move) => {
     if (playerMove || showResult || loading) return;
 
     const oMove = opponentSavedMoves[round - 1];
+    console.log(
+      `🎮 ROUND ${round}: Player chose ${move}, Opponent chose ${oMove}`,
+    );
+
     setPlayerMove(move);
     setOpponentMove(oMove);
 
     setTimeout(() => {
       setShowResult(true);
       const result = determineWinner(move, oMove);
+      console.log(`⚖️ RESULT: Round ${round} was a ${result}`);
 
       let pScore = scores.player;
       let oScore = scores.opponent;
       if (result === "win") pScore++;
       if (result === "lose") oScore++;
+
       setScores({ player: pScore, opponent: oScore });
 
       setTimeout(() => {
         if (round >= 4) {
+          console.log("🏆 MATCH OVER: Moving to completion logic.");
           completeChallenge(pScore, oScore);
         } else {
+          console.log("⏭️ NEXT ROUND: Resetting board.");
           setRound((r) => r + 1);
           setPlayerMove(null);
           setOpponentMove(null);

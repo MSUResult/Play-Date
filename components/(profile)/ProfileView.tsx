@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Edit3, Mic, ShieldCheck, MapPin, User } from "lucide-react";
 import ActivityTab from "./ActivityTab";
-import GamingHistoryTab from "./GamingHistoryTab";
+import { GamingHistoryTab } from "./GamingHistoryTab";
 
 export default function ProfileView({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState("activity");
@@ -132,11 +132,10 @@ export default function ProfileView({ user }: { user: any }) {
       <div className="px-5 mt-6 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === "activity" ? (
           <ActivityTab
-            likes={activityData.likes}
-            challenges={activityData.challenges}
+          // Removed Likes/Challenges props as ActivityTab now fetches its own data
           />
         ) : (
-          <GamingHistoryTab history={activityData.history} />
+          <GamingHistoryTab currentUserId={user._id} />
         )}
       </div>
     </div>

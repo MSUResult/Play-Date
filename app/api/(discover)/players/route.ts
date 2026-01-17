@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import User from "@/models/User";
 import { dbConnect } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await dbConnect();
 
     // Sort by lastActive: -1 means "Newest First"
-    const realUsers = await User.find({})
+
+    const { searchParams } = new URL(request.url);
+    const currentUserId = searchParams.get("userId");
+
+    const query = currentUserId ? { _id: { $ne: currentUserId } } : {};
+
+    const realUsers = await User.find(query)
       .select("name age district photo lastActive isVerified")
       .sort({ lastActive: -1 })
       .limit(20)

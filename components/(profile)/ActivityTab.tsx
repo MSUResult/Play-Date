@@ -42,7 +42,6 @@ export function LikeCard({ lk }: { lk: any }) {
     </div>
   );
 }
-
 export function ChallengeCard({
   ch,
   onAccept,
@@ -53,6 +52,7 @@ export function ChallengeCard({
   const router = useRouter();
 
   const handleAccept = () => {
+    // Ensure we are grabbing the ID of the person who challenged us
     const challengerId = ch.challengerId?._id || ch.id;
     const documentId = ch._id || ch.id;
     onAccept(documentId);
@@ -67,7 +67,8 @@ export function ChallengeCard({
         </div>
         <div>
           <p className="font-black text-slate-800 text-sm">
-            {ch.challengerId?.name || ch.name} challenged you
+            {/* Display the Challenger's name */}
+            {ch.challengerId?.name || "Someone"} challenged you
           </p>
           <p className="text-[10px] text-orange-600 font-black uppercase italic">
             {ch.task || "Rock Paper Scissors"}
@@ -76,7 +77,7 @@ export function ChallengeCard({
       </div>
       <div className="flex flex-col items-end gap-1">
         <span className="text-[9px] font-bold text-slate-300 uppercase">
-          {formatTime(ch.createdAt || ch.time)}
+          {formatTime(ch.createdAt)}
         </span>
         <button
           onClick={handleAccept}
@@ -89,37 +90,36 @@ export function ChallengeCard({
   );
 }
 
-// --- MAIN TAB ---
-
 export default function ActivityTab() {
   const [realChallenges, setRealChallenges] = useState<any[]>([]);
-  const [realLikes, setRealLikes] = useState<any[]>([]); // New state for likes
+  const [realLikes, setRealLikes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchActivity = useCallback(async () => {
     if (!user?._id) return;
     try {
-      // 1. Fetch Challenges
-      const resPending = await fetch(
-        `/api/challenge?userId=${user._id}&status=pending&t=${Date.now()}`,
-      );
-      if (!resPending.ok) throw new Error("Challenges API failed");
-      const pendingData = await resPending.json();
+      const [resPending, resLikes] = await Promise.all([
+        fetch(
+          `/api/challenge?userId=${user._id}&status=pending&t=${Date.now()}`,
+        ),
+        fetch(`/api/received?userId=${user._id}&t=${Date.now()}`),
+      ]);
 
-      // 2. Fetch Likes (Check the URL carefully!)
-      // Ensure the file is at /api/social/received/route.ts or /api/received/route.ts
-      const resLikes = await fetch(
-        `/api/received?userId=${user._id}&t=${Date.now()}`,
-      );
-      if (!resLikes.ok) throw new Error("Likes API failed");
+      const pendingData = await resPending.json();
       const likesData = await resLikes.json();
 
-      setRealChallenges(Array.isArray(pendingData) ? pendingData : []);
-      setRealLikes(Array.isArray(likesData) ? likesData : []);
-    } catch (err: any) {
-      // THIS WILL NOW TELL YOU THE EXACT ERROR IN THE CONSOLE
-      console.error("DEBUG ACTIVITY ERROR:", err.message);
+      if (Array.isArray(pendingData)) {
+        // Double check: Filter out any challenge where I am the challenger
+        const onlyIncoming = pendingData.filter(
+          (ch) => (ch.challengerId?._id || ch.challengerId) !== user._id,
+        );
+        setRealChallenges(onlyIncoming);
+      }
+
+      if (Array.isArray(likesData)) setRealLikes(likesData);
+    } catch (err) {
+      console.error("Error fetching activity");
     } finally {
       setLoading(false);
     }
@@ -144,7 +144,7 @@ export default function ActivityTab() {
 
   return (
     <div className="space-y-8">
-      {/* --- LIKES SECTION --- */}
+      {/* LIKES SECTION */}
       {realLikes.length > 0 && (
         <div>
           <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
@@ -159,7 +159,7 @@ export default function ActivityTab() {
         </div>
       )}
 
-      {/* --- CHALLENGES SECTION --- */}
+      {/* CHALLENGES SECTION */}
       <div>
         <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
           <Swords size={12} className="text-orange-500" /> Pending Challenges
@@ -171,11 +171,7 @@ export default function ActivityTab() {
             </p>
           ) : (
             realChallenges.map((ch: any) => (
-              <ChallengeCard
-                key={ch._id || ch.id}
-                ch={ch}
-                onAccept={handleFastRemove}
-              />
+              <ChallengeCard key={ch._id} ch={ch} onAccept={handleFastRemove} />
             ))
           )}
         </div>

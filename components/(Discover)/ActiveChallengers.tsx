@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { MapPin, Swords, Heart, ShieldCheck } from "lucide-react";
+import { MapPin, Swords, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -36,51 +36,49 @@ const ActiveChallengers = ({
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user?._id) return;
+
       try {
         // 1. Fetch Players
-        const res = await fetch("/api/players");
+        const res = await fetch(`/api/players?userId=${user?._id}`);
         const data = await res.json();
         setRealPlayers(data.users || []);
 
-        if (user?._id) {
-          // 2. Fetch people YOU liked (for heart icons)
-          const myLikesRes = await fetch(
-            `/api/social/my-likes?userId=${user._id}`,
-          );
-          const myLikesData = await myLikesRes.json();
-          const likesMap: Record<string, boolean> = {};
-          myLikesData.likedIds.forEach((id: string) => {
-            likesMap[id] = true;
-          });
-          setLikedPlayers(likesMap);
+        // 2. Fetch MY LIKES (To keep hearts red on cards)
+        const myLikesRes = await fetch(
+          `/api/social/my-likes?userId=${user._id}`,
+        );
+        const myLikesData = await myLikesRes.json();
+        const likesMap: Record<string, boolean> = {};
+        myLikesData.likedIds?.forEach((id: string) => {
+          likesMap[id] = true;
+        });
+        setLikedPlayers(likesMap);
 
-          // 3. Fetch people who liked YOU (for header count)
-          const receivedRes = await fetch(
-            `/api/social/received-likes-count?userId=${user._id}`,
-          );
-          const receivedData = await receivedRes.json();
-          setLikeCount(receivedData.count || 0);
-        }
+        // 3. Fetch RECEIVED LIKES COUNT (For the Header in Discover)
+        // Use the exact route you provided for counting received likes
+        const receivedRes = await fetch(
+          `/api/social/received-likes-count?userId=${user._id}`,
+        );
+        const receivedData = await receivedRes.json();
+        setLikeCount(receivedData.count || 0);
       } catch (err) {
         console.error("Init error:", err);
       }
     };
+
     fetchData();
   }, [user?._id, setLikeCount]);
 
   const toggleLike = async (receiverId: string | number) => {
     if (!user) {
-      toast.error("Login Required", {
-        action: {
-          label: "Login",
-          onClick: () => (window.location.href = "/login"),
-        },
-      });
+      toast.error("Login Required");
       return;
     }
 
     const isCurrentlyLiked = likedPlayers[receiverId];
-    // Optimistic UI for the Heart icon
+
+    // Optimistic UI: Update heart immediately so it stays/removes visually
     setLikedPlayers((prev) => ({ ...prev, [receiverId]: !isCurrentlyLiked }));
 
     try {
@@ -92,8 +90,11 @@ const ActiveChallengers = ({
 
       if (!res.ok) throw new Error();
       const data = await res.json();
+
+      // Ensure state matches the server response
       setLikedPlayers((prev) => ({ ...prev, [receiverId]: data.isLiked }));
     } catch (err) {
+      // Revert if API fails
       setLikedPlayers((prev) => ({ ...prev, [receiverId]: isCurrentlyLiked }));
       toast.error("Failed to update like");
     }

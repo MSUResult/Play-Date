@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       console.log("Fetching List for User:", userId, "Status:", status);
       // FIX: Look for challenges where user is EITHER receiver OR challenger
       const challenges = await Challenge.find({
-        $or: [{ receiverId: userId }, { challengerId: userId }],
+        receiverId: userId,
         status: status,
       })
         .populate("challengerId", "name photo")

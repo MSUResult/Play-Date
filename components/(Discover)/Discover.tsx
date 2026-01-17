@@ -1,9 +1,10 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Heart, Zap } from "lucide-react";
 import ActiveChallengers from "./ActiveChallengers";
 
 const Discover = () => {
+  const [likeCount, setLikeCount] = useState(0);
   return (
     <main className="min-h-screen bg-[#F3F0F5] pb-24 font-sans">
       {/* Container to keep content centered and appropriately sized on desktop */}
@@ -12,7 +13,9 @@ const Discover = () => {
         <header className="p-6 flex justify-between items-center">
           <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/50 shadow-sm">
             <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />
-            <span className="text-sm font-bold text-slate-700">15 Likes</span>
+            <span className="text-sm font-bold text-slate-700">
+              {likeCount} Likes
+            </span>
           </div>
           <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform">
             <span className="text-white text-xs font-bold">YOU</span>
@@ -66,12 +69,11 @@ const Discover = () => {
             </div>
 
             {/* Grid Component */}
-            <ActiveChallengers />
+            <ActiveChallengers setLikeCount={setLikeCount} />
           </section>
         </div>
       </div>
     </main>
   );
 };
-
 export default Discover;

@@ -3,7 +3,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Heart, Swords, Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { GamingHistoryTab } from "./GamingHistoryTab"; // Import your history component
 
 // --- HELPERS ---
 const formatTime = (date: any) => {
@@ -17,6 +16,32 @@ const formatTime = (date: any) => {
 };
 
 // --- COMPONENTS ---
+
+// New LikeCard Component
+export function LikeCard({ lk }: { lk: any }) {
+  return (
+    <div className="bg-white p-4 rounded-[24px] border border-slate-100 flex items-center justify-between shadow-sm border-l-4 border-l-pink-500">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-pink-50 flex items-center justify-center text-pink-500 border border-pink-100">
+          <Heart size={18} fill="currentColor" />
+        </div>
+        <div>
+          <p className="font-black text-slate-800 text-sm">
+            {lk.senderId?.name || "Someone"} liked you
+          </p>
+          <p className="text-[10px] text-pink-600 font-black uppercase italic tracking-tighter">
+            Wants to challenge you!
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-[9px] font-bold text-slate-300 uppercase">
+          {formatTime(lk.createdAt)}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function ChallengeCard({
   ch,
@@ -68,20 +93,33 @@ export function ChallengeCard({
 
 export default function ActivityTab() {
   const [realChallenges, setRealChallenges] = useState<any[]>([]);
+  const [realLikes, setRealLikes] = useState<any[]>([]); // New state for likes
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchActivity = useCallback(async () => {
     if (!user?._id) return;
     try {
-      // ONLY fetch Pending here
+      // 1. Fetch Challenges
       const resPending = await fetch(
         `/api/challenge?userId=${user._id}&status=pending&t=${Date.now()}`,
       );
+      if (!resPending.ok) throw new Error("Challenges API failed");
       const pendingData = await resPending.json();
-      if (Array.isArray(pendingData)) setRealChallenges(pendingData);
-    } catch (err) {
-      console.error("Failed to load activity");
+
+      // 2. Fetch Likes (Check the URL carefully!)
+      // Ensure the file is at /api/social/received/route.ts or /api/received/route.ts
+      const resLikes = await fetch(
+        `/api/received?userId=${user._id}&t=${Date.now()}`,
+      );
+      if (!resLikes.ok) throw new Error("Likes API failed");
+      const likesData = await resLikes.json();
+
+      setRealChallenges(Array.isArray(pendingData) ? pendingData : []);
+      setRealLikes(Array.isArray(likesData) ? likesData : []);
+    } catch (err: any) {
+      // THIS WILL NOW TELL YOU THE EXACT ERROR IN THE CONSOLE
+      console.error("DEBUG ACTIVITY ERROR:", err.message);
     } finally {
       setLoading(false);
     }
@@ -106,14 +144,30 @@ export default function ActivityTab() {
 
   return (
     <div className="space-y-8">
+      {/* --- LIKES SECTION --- */}
+      {realLikes.length > 0 && (
+        <div>
+          <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
+            <Heart size={12} className="text-pink-500" fill="currentColor" />{" "}
+            New Likes
+          </h3>
+          <div className="space-y-3">
+            {realLikes.map((lk: any) => (
+              <LikeCard key={lk._id} lk={lk} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* --- CHALLENGES SECTION --- */}
       <div>
         <h3 className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-[0.2em] uppercase mb-4">
           <Swords size={12} className="text-orange-500" /> Pending Challenges
         </h3>
         <div className="space-y-3">
-          {realChallenges.length === 0 ? (
+          {realChallenges.length === 0 && realLikes.length === 0 ? (
             <p className="text-xs text-slate-300 italic font-bold p-4">
-              No pending games
+              No new activity
             </p>
           ) : (
             realChallenges.map((ch: any) => (
@@ -126,7 +180,6 @@ export default function ActivityTab() {
           )}
         </div>
       </div>
-      {/* HISTORY REMOVED FROM HERE */}
     </div>
   );
 }

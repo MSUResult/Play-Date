@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"   ;
 import User from "@/models/User";
 import { v2 as cloudinary } from "cloudinary";
 import { dbConnect } from "@/lib/db";

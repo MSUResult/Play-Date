@@ -4,9 +4,15 @@ import { useState } from "react";
 import { Edit3, Mic, ShieldCheck, MapPin, User } from "lucide-react";
 import ActivityTab from "./ActivityTab";
 import { GamingHistoryTab } from "./GamingHistoryTab";
+import EditProfileModal from "../(ProfileEdit)/ProfileEditor";
+import VoiceRecorderModal from "../(ProfileEdit)/VoiceRecorder";
 
 export default function ProfileView({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState("activity");
+  const [userData, setUserData] = useState(user);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const activityData = {
     challenges: [
@@ -59,13 +65,41 @@ export default function ProfileView({ user }: { user: any }) {
     ],
   };
 
+  const handleVoiceUpload = async (base64: string) => {
+    try {
+      const res = await fetch("/api/voice-upload", {
+        method: "POST", // Using POST for creation/upload
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voiceBase64: base64 }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Update local state so the button changes to "Update Voice" immediately
+        setUserData(data.user);
+      }
+    } catch (err) {
+      console.error("Voice upload failed", err);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24">
       {/* 1. TOP HEADER */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[40px] shadow-sm border-b border-slate-100 relative">
-        <button className="absolute top-6 right-6 p-2.5 bg-slate-50 rounded-xl text-slate-600 border border-slate-100 active:scale-95 transition-all">
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className="absolute top-6 right-6 p-2.5 bg-slate-50 rounded-xl text-slate-600 border border-slate-100 active:scale-95 transition-all"
+        >
           <Edit3 size={18} />
         </button>
+
+        {isEditModalOpen && (
+          <EditProfileModal
+            user={userData}
+            onClose={() => setIsEditModalOpen(false)}
+            onUpdate={(newData) => setUserData({ ...userData, ...newData })}
+          />
+        )}
 
         <div className="flex flex-col items-center">
           <div className="relative">
@@ -98,9 +132,29 @@ export default function ProfileView({ user }: { user: any }) {
           </div>
 
           <div className="mt-6 flex gap-3 w-full max-w-xs">
-            <button className="flex-1 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center gap-2 font-black text-xs shadow-sm active:scale-95 transition-all">
-              <Mic size={16} /> Voice Intro
+            <button
+              onClick={() => setIsVoiceModalOpen(true)}
+              className={`flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 font-black text-xs shadow-sm active:scale-95 transition-all ${
+                userData.voiceIntro
+                  ? "bg-white text-slate-800 border-2 border-slate-100"
+                  : "bg-slate-900 text-white"
+              }`}
+            >
+              <Mic
+                size={16}
+                className={userData.voiceIntro ? "text-pink-500" : ""}
+              />
+              {userData.voiceIntro ? "Update Voice" : "Voice Intro"}
             </button>
+
+            {/* Add the Modal at the bottom of the component */}
+            {isVoiceModalOpen && (
+              <VoiceRecorderModal
+                onClose={() => setIsVoiceModalOpen(false)}
+                onUpload={handleVoiceUpload}
+              />
+            )}
+
             <button className="flex-1 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center gap-2 font-black text-xs border border-blue-100 active:scale-95 transition-all">
               <ShieldCheck size={16} /> Verify
             </button>

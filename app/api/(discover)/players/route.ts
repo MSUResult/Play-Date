@@ -6,17 +6,16 @@ export async function GET(request: Request) {
   try {
     await dbConnect();
 
-    // Sort by lastActive: -1 means "Newest First"
-
     const { searchParams } = new URL(request.url);
     const currentUserId = searchParams.get("userId");
 
     const query = currentUserId ? { _id: { $ne: currentUserId } } : {};
 
+    // OPTIMIZATION: Select only what is needed for the card to reduce data size
     const realUsers = await User.find(query)
-      .select("name age district photo lastActive isVerified")
-      .sort({ lastActive: -1 })
-      .limit(20)
+      .select("name age district photo voiceIntro isVerified")
+      .sort({ lastActive: -1 }) // Make sure you have an index on lastActive in your Model
+      .limit(12)
       .lean();
 
     const formattedUsers = realUsers.map((u: any) => ({
@@ -26,8 +25,8 @@ export async function GET(request: Request) {
       dist: u.district || "Nearby",
       img:
         u.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`,
+      voiceIntro: u.voiceIntro,
       isReal: true,
-      lastActive: u.lastActive,
       isVerified: u.isVerified,
     }));
 

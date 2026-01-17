@@ -68,7 +68,7 @@ export default function HowItWorks() {
           How It Works
         </h2>
         <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-          Connect with someone special in just a few simple steps. Our platform
+          Connect through a classic game of strategy and luck. Our platform
           makes meeting new people fun and effortless.
         </p>
 

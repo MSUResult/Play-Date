@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { MapPin, Swords, Heart, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext"; // Import your custom auth
 import { toast } from "sonner"; // For the "Go Login" notification
+import { useRouter } from "next/navigation";
 
 const DUMMY_PLAYERS = [
   {
@@ -55,6 +56,8 @@ const ActiveChallengers = () => {
   const [likedPlayers, setLikedPlayers] = useState<
     Record<string | number, boolean>
   >({});
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRealPlayers = async () => {
@@ -172,7 +175,17 @@ const ActiveChallengers = () => {
               </div>
             </div>
 
-            <button className="w-full py-3 bg-slate-900 hover:bg-pink-600 text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md group">
+            <button
+              className="w-full py-3 bg-slate-900 hover:bg-pink-600 text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md group"
+              onClick={() => {
+                if (!user) {
+                  toast.error("Login required to challenge!");
+                  return;
+                }
+                // Route to the record page with the opponent's ID
+                router.push(`/play/record/${playerId}`);
+              }}
+            >
               <Swords className="w-4 h-4 text-[#00FFAB] group-hover:rotate-12 transition-transform" />
               <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">
                 Challenge
